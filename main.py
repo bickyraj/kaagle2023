@@ -1,6 +1,7 @@
 import pandas as pd
-
-file_path = "files/0_example.txt"
+file_name = "1_binary_landscapes.txt"
+file_path = "files/" + file_name
+output_path = "output/" + file_name
 global_satisfaction_score = 0
 prev_frame_tags = []
 temp_portrait_tags = []
@@ -9,34 +10,49 @@ local_score = 0
 paintings = []
 landscape_paintings = []
 portrait_paintings = []
-with open(file_path, "r") as file:
-    first_line = file.readline()
-    next(file)
-    lines = file.readlines()
-    for line in lines:
-        type,  number_of_tags, *tags = line.split()
-        if type.lower() == "l":
-            landscape_paintings.append([type, number_of_tags, tags])
-            intersection = 0
-            intersection = len(set(tags) & set(prev_frame_tags))
-            local_score = min(intersection, len(set(tags)) - intersection,
-                              len(set(prev_frame_tags)) - intersection)
-            prev_frame_tags = tags
+
+chunk_size = 10  # Number of lines to read per chunk
+
+# Initialize an empty DataFrame
+df = pd.DataFrame(columns=["Type", "Number of Tags", "Tags"])
+
+# Read the large file in chunks
+rows = []
+with open(file_path, 'r') as file:
+    next(file)  # Skip the first row
+    for line in file:
+        # Split the line by space
+        data = line.strip().split(' ')
+        # Extract the relevant information
+        row = {
+            "Type": data[0],
+            "Number of Tags": data[1],
+            "Tags": data[2:]
+        }
+
+        # Append the row to the DataFrame
+        rows.append(row)
+df = pd.DataFrame(rows)
+print(df)
+total_L = df[df['Type'] == 'L'].shape[0]
+total_P = df[df['Type'] == 'P'].shape[0]
+total_frames = total_L + total_P/2
+
+# Write the output to a file
+with open(output_path, 'w') as file:
+    file.write(f"{int(total_frames)}\n")
+    prev_type = ''
+    for index, row in df.iterrows():
+        if row['Type'] == 'L':
+            if prev_type == 'P':
+                file.write('\n')
+            file.write(f"{index}\n")
+            prev_type = 'L'
         else:
-            portrait_paintings.append([type, number_of_tags, tags])
-            if portrait_counter > 0:
-                set1 = set(temp_portrait_tags)
-                set2 = set(tags)
-                unique_list_tags = list(set1.union(set2))
-                intersection = 0
-                intersection = len(set(unique_list_tags) & set(prev_frame_tags))
-                local_score = min(intersection, len(set(unique_list_tags)) - intersection,
-                                  len(set(prev_frame_tags)) - intersection)
+            if portrait_counter > 1:
+                file.write('\n')
                 portrait_counter = 0
-                prev_frame_tags = unique_list_tags
-            else:
-                temp_portrait_tags = tags
-                portrait_counter += 1
-        global_satisfaction_score += local_score
-    print(len(portrait_paintings))
-# print(global_satisfaction_score)
+            tags_str = str(index)
+            file.write(f"{tags_str} ")
+            prev_type = 'P'
+            portrait_counter += 1
