@@ -1,21 +1,29 @@
-file_path = "files/110_oily_portraits.txt"
+import pandas as pd
+
+file_path = "files/0_example.txt"
 global_satisfaction_score = 0
 prev_frame_tags = []
 temp_portrait_tags = []
 portrait_counter = 0
 local_score = 0
+paintings = []
+landscape_paintings = []
+portrait_paintings = []
 with open(file_path, "r") as file:
+    first_line = file.readline()
     next(file)
     lines = file.readlines()
     for line in lines:
         type,  number_of_tags, *tags = line.split()
         if type.lower() == "l":
+            landscape_paintings.append([type, number_of_tags, tags])
             intersection = 0
             intersection = len(set(tags) & set(prev_frame_tags))
             local_score = min(intersection, len(set(tags)) - intersection,
                               len(set(prev_frame_tags)) - intersection)
             prev_frame_tags = tags
         else:
+            portrait_paintings.append([type, number_of_tags, tags])
             if portrait_counter > 0:
                 set1 = set(temp_portrait_tags)
                 set2 = set(tags)
@@ -29,7 +37,6 @@ with open(file_path, "r") as file:
             else:
                 temp_portrait_tags = tags
                 portrait_counter += 1
-
         global_satisfaction_score += local_score
-
-print(global_satisfaction_score)
+    print(len(portrait_paintings))
+# print(global_satisfaction_score)
